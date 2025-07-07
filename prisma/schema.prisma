@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL")
+  directUrl = env("POSTGRES_URL_NON_POOLING")
+}
+
+// ========= МОДЕЛЬ ПОЛЬЗОВАТЕЛЯ =========
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  password  String
+  balance   Float     @default(0) // ИЗМЕНЕНО НА FLOAT
+  role      String    @default("USER")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  sessions  Session[]
+}
+
+// ========= МОДЕЛЬ ИГРОВОГО РЕСУРСА =========
+model ComputeResource {
+  id            String         @id @default(cuid())
+  name          String
+  description   String?
+  type          ResourceType   @default(PC)
+  tier          String
+  status        ResourceStatus @default(AVAILABLE)
+  ipAddress     String
+  connectionPin String?
+  hourlyRate    Float          // ИЗМЕНЕНО НА FLOAT
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  sessions      Session[]
+}
+
+// ========= МОДЕЛЬ ИГРОВОЙ СЕССИИ =========
+model Session {
+  id         String        @id @default(cuid())
+  startTime  DateTime      @default(now())
+  endTime    DateTime?
+  status     SessionStatus @default(ACTIVE)
+  totalCost  Float?        // ИЗМЕНЕНО НА FLOAT
+  userId     String
+  user       User          @relation(fields: [userId], references: [id])
+  resourceId String
+  resource   ComputeResource @relation(fields: [resourceId], references: [id])
+  createdAt  DateTime      @default(now())
+}
+
+
+// ========= ПЕРЕЧИСЛЕНИЯ (ENUMS) =========
+enum ResourceType {
+  PC
+  CONSOLE
+}
+
+enum ResourceStatus {
+  AVAILABLE
+  BUSY
+  OFFLINE
+}
+
+enum SessionStatus {
+  ACTIVE
+  COMPLETED
+  ERROR
+}
