@@ -1,0 +1,18 @@
+[package]
+name = "aura-p2p"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+thiserror = "1.0"
+tokio = { version = "1.0", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+async-trait = "0.1"
+log = "0.4"
+tailscale-client = "0.1"
+axum = "0.8"
+libp2p = { version = "0.56", features = ["tcp", "noise", "yamux", "ping", "identify", "tokio", "floodsub"] }
+libp2p-swarm-derive = "0.35"
+
+[dev-dependencies]
+tokio = { version = "1.0", features = ["rt-multi-thread", "macros"] }

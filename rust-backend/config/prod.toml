@@ -1,0 +1,13 @@
+[server]
+host = "0.0.0.0"
+port = 8080
+
+[database]
+url = "postgres://user:pass@localhost/aura"
+
+[p2p]
+bootstrap_nodes = [
+    "/ip4/1.2.3.4/tcp/4001/p2p/QmPeerId",
+    "/dns4/bootstrap.example.com/tcp/4001/p2p/QmOtherPeer"
+]
+connection_limit = 50

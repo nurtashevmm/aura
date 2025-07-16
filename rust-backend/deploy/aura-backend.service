@@ -1,0 +1,13 @@
+[Unit]
+Description=Aura Backend Service
+After=network.target
+
+[Service]
+Type=simple
+User=aura
+WorkingDirectory=/opt/aura/rust-backend
+ExecStart=/opt/aura/rust-backend/target/release/aura-backend --config /opt/aura/rust-backend/config/prod.toml
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

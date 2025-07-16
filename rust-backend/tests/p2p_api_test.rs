@@ -1,0 +1,136 @@
+use aura_core::{api::p2p::create_p2p_routes, models::AppState};
+use aura_p2p::P2pService;
+use axum::{body::Body, Router};
+use axum_test::TestServer;
+use serde_json::json;
+use std::sync::Arc;
+
+#[tokio::test]
+async fn test_peers_endpoint() {
+    let p2p_service = P2pService::new();
+    let state = Arc::new(AppState {
+        p2p: Arc::new(p2p_service),
+        db: todo!(),
+    });
+
+    let app = Router::new()
+        .nest("/p2p", create_p2p_routes())
+        .with_state(state);
+
+    let server = TestServer::new(app).unwrap();
+    
+    let response = server.get("/p2p/peers").await;
+    assert_eq!(response.status_code(), 200);
+    assert_eq!(response.text(), "[]");
+}
+
+#[tokio::test]
+async fn test_peers_count_endpoint() {
+    let p2p_service = P2pService::new();
+    let state = Arc::new(AppState {
+        p2p: Arc::new(p2p_service),
+        db: todo!(),
+    });
+
+    let app = Router::new()
+        .nest("/p2p", create_p2p_routes())
+        .with_state(state);
+
+    let server = TestServer::new(app).unwrap();
+    
+    let response = server.get("/p2p/peers/count").await;
+    assert_eq!(response.status_code(), 200);
+    assert_eq!(response.text(), "0");
+}
+
+#[tokio::test]
+async fn test_send_to_invalid_peer() {
+    let p2p_service = P2pService::new();
+    let state = Arc::new(AppState {
+        p2p: Arc::new(p2p_service),
+        db: todo!(),
+    });
+
+    let app = Router::new()
+        .nest("/p2p", create_p2p_routes())
+        .with_state(state);
+
+    let server = TestServer::new(app).unwrap();
+    
+    let response = server
+        .post("/p2p/send")
+        .json(&json!({ "peer_id": "invalid", "message": "test" }))
+        .await;
+        
+    assert_eq!(response.status_code(), 400);
+}
+
+#[tokio::test]
+async fn test_stats_after_errors() {
+    let p2p_service = P2pService::new();
+    
+    // Имитируем ошибку соединения
+    {
+        let mut stats = p2p_service.stats.lock().unwrap();
+        stats.connection_errors = 1;
+    }
+    
+    let state = Arc::new(AppState {
+        p2p: Arc::new(p2p_service),
+        db: todo!(),
+    });
+
+    let app = Router::new()
+        .nest("/p2p", create_p2p_routes())
+        .with_state(state);
+
+    let server = TestServer::new(app).unwrap();
+    
+    let response = server.get("/p2p/stats").await;
+    assert_eq!(response.status_code(), 200);
+    
+    let stats: serde_json::Value = response.json();
+    assert_eq!(stats["connection_errors"], 1);
+}
+
+#[tokio::test]
+async fn test_signaling_flow() {
+    let p2p_service = P2pService::new();
+    let state = Arc::new(AppState {
+        p2p: Arc::new(p2p_service),
+        db: todo!(),
+    });
+
+    let app = Router::new()
+        .nest("/p2p", create_p2p_routes())
+        .nest("/signaling", signaling::create_signaling_routes())
+        .with_state(state);
+
+    let server = TestServer::new(app).unwrap();
+    
+    // Отправляем offer
+    let offer = SignalMessage {
+        peer_id: "test_peer".to_string(),
+        sdp: "test_offer".to_string(),
+    };
+    
+    let response = server
+        .post("/signaling/offer")
+        .json(&offer)
+        .await;
+    
+    assert_eq!(response.status_code(), 200);
+    
+    // Проверяем обработку answer
+    let answer = SignalMessage {
+        peer_id: "test_peer".to_string(),
+        sdp: "test_answer".to_string(),
+    };
+    
+    let response = server
+        .post("/signaling/answer")
+        .json(&answer)
+        .await;
+    
+    assert_eq!(response.status_code(), 200);
+}

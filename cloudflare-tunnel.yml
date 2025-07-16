@@ -1,0 +1,10 @@
+tunnel: aura-gaming
+credentials-file: /Users/nurtashevmm/Documents/Projects/aura/cloudflare/credentials.json
+
+ingress:
+  - hostname: aura.gg
+    service: http://localhost:3000
+    originRequest:
+      http2Origin: true
+      noTLSVerify: true
+  - service: http_status:404

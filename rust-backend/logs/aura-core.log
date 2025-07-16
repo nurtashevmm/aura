@@ -1,0 +1,17 @@
+    Updating crates.io index
+error: failed to select a version for `subtle`.
+    ... required by package `rustls v0.23.0`
+    ... which satisfies dependency `rustls = "^0.23"` of package `futures-rustls v0.26.0`
+    ... which satisfies dependency `futures-rustls = "^0.26.0"` of package `libp2p-websocket v0.45.1`
+    ... which satisfies dependency `libp2p-websocket = "^0.45.1"` of package `libp2p v0.56.0`
+    ... which satisfies dependency `libp2p = "^0.56.0"` of package `aura-core v0.1.0 (/Users/nurtashevmm/Documents/Projects/aura/rust-backend)`
+versions that meet the requirements `^2.5.0` are: 2.6.1, 2.5.0
+
+all possible versions conflict with previously selected packages.
+
+  previously selected package `subtle v2.4.0`
+    ... which satisfies dependency `subtle = "^2.4"` of package `stun v0.4.3`
+    ... which satisfies dependency `stun = "^0.4.3"` of package `webrtc v0.6.0`
+    ... which satisfies dependency `webrtc = "^0.6"` of package `aura-core v0.1.0 (/Users/nurtashevmm/Documents/Projects/aura/rust-backend)`
+
+failed to select a version for `subtle` which could resolve this conflict

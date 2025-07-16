@@ -1,0 +1,50 @@
+[package]
+name = "aura-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1.0", features = ["full", "macros", "rt", "rt-multi-thread"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "1.0"
+js-sys = "0.3"
+web-sys = { version = "0.3", features = ["console"] }
+getrandom = { version = "0.2", features = ["js", "wasm-bindgen"] }
+async-trait = "0.1.88"
+mockall = "0.13.1"
+libp2p = { version = "0.56.0", features = ["tcp", "websocket", "dns", "macros", "ping", "identify", "noise", "yamux"], default-features = false }
+libp2p-tcp = { version = "0.44.0", features = ["tokio"] }
+aura-p2p = { path = "../aura-p2p", optional = true }
+ring = "0.17.7"
+subtle = { version = "2.5", features = ["i128"] }
+actix-web = "4.0"
+actix-web-httpauth = "0.8"
+axum = { version = "0.7", features = ["macros"] }
+sqlx = { version = "0.7", features = ["postgres", "runtime-tokio-native-tls"] }
+env_logger = "0.11"
+uuid = { version = "1.0", features = ["v4"] }
+chrono = "0.4"
+rust_decimal = "1.37"
+
+[dev-dependencies]
+axum-test-helper = "0.2"
+tokio = { version = "1.0", features = ["full"] }
+sqlx = { version = "0.7", features = ["postgres", "runtime-tokio-native-tls"] }
+
+[features]
+default = []
+p2p = ["aura-p2p"]
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2"
+console_error_panic_hook = "0.1"
+aura-wasm = { path = "../aura-wasm" }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio = { version = "1.0", features = ["full"] }
+mio = "1.0"
+
+[lib]
+name = "aura_core"
+crate-type = ["cdylib", "rlib"]

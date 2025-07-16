@@ -1,0 +1,11 @@
+[p2p]
+listen_addr = "0.0.0.0:5000"  # Базовый порт
+
+[tailscale]
+auth_key = "your-tskey-auth-key"
+hostname = "aura-node"
+advertise_routes = "100.64.0.0/10"
+
+[metrics]
+enabled = true
+port = 9090
