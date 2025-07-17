@@ -1,0 +1,29 @@
+stages:
+  - build
+
+variables:
+  CARGO_HOME: "${CI_PROJECT_DIR}/.cargo"
+  RUSTUP_HOME: "${CI_PROJECT_DIR}/.rustup"
+
+build_installer:
+  stage: build
+  image: ubuntu:22.04
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y wget wine64
+    - wget -q https://jrsoftware.org/download.php/is.exe
+    - wine is.exe /VERYSILENT /SUPPRESSMSGBOXES /DIR="C:\innosetup"
+    - ln -s "$HOME/.wine/drive_c/innosetup/ISCC.exe" /usr/local/bin/iscc
+    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+    - source "${CARGO_HOME}/env"
+    - rustup target add x86_64-pc-windows-msvc
+  script:
+    - cargo build --release --target x86_64-pc-windows-msvc
+    - mkdir -p target/release
+    - cp target/x86_64-pc-windows-msvc/release/*.exe target/release/
+    - cd installer
+    - iscc AuraSetup.iss
+  artifacts:
+    paths:
+      - installer/Output/AuraSetup.exe
+    expire_in: 1 week
