@@ -7,7 +7,7 @@ cache:
   paths:
     - .cargo
     - .rustup
-    - .wine/drive_c/innosetup
+    - .wine/
 
 stages:
   - setup
@@ -15,24 +15,26 @@ stages:
 
 install_dependencies:
   stage: setup
-  image: ubuntu:22.04
   script:
+    - echo "Установка базовых зависимостей..."
     - apt-get update -qq
-    - apt-get install -y wget wine64
-    - wget -q https://jrsoftware.org/download.php/is.exe
-    - wine is.exe /VERYSILENT /SUPPRESSMSGBOXES /DIR="C:\innosetup"
-    - ln -s "$HOME/.wine/drive_c/innosetup/ISCC.exe" /usr/local/bin/iscc
+    - apt-get install -y wget software-properties-common
+    - wget -O- https://dl.winehq.org/wine-builds/winehq.key | apt-key add -
+    - apt-add-repository "deb https://dl.winehq.org/wine-builds/ubuntu/ $(lsb_release -cs) main"
+    - echo "Установка Wine (это может занять несколько минут)..."
+    - apt-get install -y --install-recommends winehq-stable
+    - wine --version
     - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
     - source "${CARGO_HOME}/env"
     - rustup target add x86_64-pc-windows-msvc
+  timeout: 30 minutes
   artifacts:
     paths:
-      - .wine/drive_c/innosetup
+      - .wine/
     expire_in: 1 week
 
 build_installer:
   stage: build
-  image: ubuntu:22.04
   script:
     - source "${CARGO_HOME}/env"
     - cargo build --release --target x86_64-pc-windows-msvc
