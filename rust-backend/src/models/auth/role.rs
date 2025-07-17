@@ -17,3 +17,15 @@ impl std::str::FromStr for Role {
         }
     }
 }
+
+use std::fmt;
+
+impl fmt::Display for Role {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Role::Admin => write!(f, "admin"),
+            Role::Merchant => write!(f, "merchant"),
+            Role::User => write!(f, "user"),
+        }
+    }
+}

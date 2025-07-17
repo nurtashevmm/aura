@@ -1,0 +1,14 @@
+[Unit]
+Description=AURA Backend Service
+After=network.target
+
+[Service]
+Type=simple
+User=aura
+WorkingDirectory=/home/aura/backend
+ExecStart=/home/aura/backend/aura-core
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

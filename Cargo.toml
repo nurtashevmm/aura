@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "rust-backend",
+    "merchant-agent"
+]
+
+[workspace.package]
+edition = "2021"

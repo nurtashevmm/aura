@@ -1,17 +1,30 @@
-use aura_core::models::auth::account_provider::AccountProvider;
+use aura_core::models::auth::{account_provider::AccountProvider, role::Role};
 use aura_core::services::account_provider::DbAccountProvider;
-use sqlx::PgPool;
+use sqlx::sqlite::SqlitePool;
 
 #[tokio::test]
 async fn test_account_provider() {
-    // Setup test database
-    let pool = PgPool::connect("postgres://testuser:testpass@localhost/test").await.unwrap();
+    let pool = SqlitePool::connect("sqlite::memory:")
+        .await
+        .unwrap();
+        
+    sqlx::query(
+        "CREATE TABLE accounts (user_id TEXT PRIMARY KEY, role TEXT NOT NULL)"
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
     
-    // Initialize service
-    let account_provider = DbAccountProvider::new(pool);
+    sqlx::query(
+        "INSERT INTO accounts (user_id, role) VALUES (?, ?)"
+    )
+    .bind("test_user")
+    .bind("user")
+    .execute(&pool)
+    .await
+    .unwrap();
     
-    // Test get_role with seeded test user
-    let result = account_provider.get_role("test_user").await;
-    assert!(result.is_ok());
-    assert_eq!(format!("{:?}", result.unwrap()), "Role::User");
+    let provider = DbAccountProvider::new(pool);
+    let role = AccountProvider::get_role(&provider, "test_user").await.unwrap();
+    assert_eq!(role, Role::User);
 }

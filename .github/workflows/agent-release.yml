@@ -1,0 +1,81 @@
+name: Merchant Agent Release
+
+on:
+  push:
+    tags:
+      - 'agent-v*'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Run tests
+        run: |
+          cd merchant-agent
+          cargo test --release
+
+  build:
+    needs: test
+    strategy:
+      matrix:
+        target: [x86_64-pc-windows-gnu, x86_64-unknown-linux-gnu]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+      - name: Build merchant-agent
+        run: |
+          cd merchant-agent
+          cargo build --release --target ${{ matrix.target }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: merchant-agent-${{ matrix.target }}
+          path: merchant-agent/target/${{ matrix.target }}/release/merchant-agent${{ contains(matrix.target, 'windows') && '.exe' || '' }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: Verify version
+        run: |
+          echo "Verifying version matches tag"
+          TAG_VERSION=${GITHUB_REF#refs/tags/agent-v}
+          BIN_VERSION=$(./dist/merchant-agent-x86_64-unknown-linux-gnu --version | awk '{print $2}')
+          if [ "$TAG_VERSION" != "$BIN_VERSION" ]; then
+            echo "Version mismatch: tag $TAG_VERSION vs binary $BIN_VERSION"
+            exit 1
+          fi
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body: 'Multi-platform release of Aura Merchant Agent.'
+          files: |
+            dist/merchant-agent-x86_64-pc-windows-gnu.exe
+            dist/merchant-agent-x86_64-unknown-linux-gnu
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Notify Slack
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "Merchant Agent v${GITHUB_REF#refs/tags/agent-v} released"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

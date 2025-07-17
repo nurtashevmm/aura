@@ -1,0 +1,113 @@
+openapi: 3.0.3
+info:
+  title: Aura Backend API
+  version: 0.1.0
+paths:
+  /api/balance/topup:
+    post:
+      summary: Top-up user balance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: integer
+                  description: Amount in cents
+      responses:
+        '200':
+          description: Balance updated
+  /api/session/start:
+    post:
+      summary: Start gameplay session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionRequest'
+      responses:
+        '200':
+          description: Session started
+  /api/session/stop:
+    post:
+      summary: Stop gameplay session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionRequest'
+      responses:
+        '200':
+          description: Session stopped
+  /api/billing/tick:
+    post:
+      summary: Manually trigger billing tick
+      responses:
+        '200':
+          description: Billing executed
+  /api/merchant/heartbeat:
+    post:
+      summary: Merchant PC heartbeat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HeartbeatPayload'
+      responses:
+        '200':
+          description: Recorded
+  /api/stats/summary:
+    get:
+      summary: Session statistics summary
+      responses:
+        '200':
+          description: Summary object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatsSummary'
+  /api/p2p/peers:
+    get:
+      summary: List connected P2P peers
+      responses:
+        '200':
+          description: Array of peers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PeerInfo'
+components:
+  schemas:
+    SessionRequest:
+      type: object
+      properties:
+        pc_id:
+          type: string
+    HeartbeatPayload:
+      type: object
+      properties:
+        pc_id:
+          type: string
+        sessions_active:
+          type: integer
+    StatsSummary:
+      type: object
+      properties:
+        sessions_total:
+          type: integer
+        active_sessions:
+          type: integer
+    PeerInfo:
+      type: object
+      properties:
+        id:
+          type: string
+        address:
+          type: string

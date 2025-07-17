@@ -1,0 +1,7 @@
+Kaspi Bank Receipt
+Date: 2025-07-17
+Time: 14:30
+Transaction ID: ABC123
+Amount: 5000
+Recipient: Aura Play
+Status: Completed

@@ -1,0 +1,13 @@
+[build]
+rustflags = [
+  "-L", "/opt/homebrew/opt/leptonica/lib",
+  "-L", "/opt/homebrew/opt/tesseract/lib",
+  "-L", "$(brew --prefix llvm)/lib"
+]
+
+[env]
+LEPTONICA_INCLUDE_DIR = "/opt/homebrew/opt/leptonica/include"
+TESSERACT_INCLUDE_DIR = "/opt/homebrew/opt/tesseract/include"
+LLVM_CONFIG_PATH = "$(brew --prefix llvm)/bin/llvm-config"
+CPATH = "/opt/homebrew/opt/leptonica/include:/opt/homebrew/opt/tesseract/include"
+LIBRARY_PATH = "/opt/homebrew/opt/leptonica/lib:/opt/homebrew/opt/tesseract/lib"

@@ -1,0 +1,20 @@
+{
+  "title": "Payment Metrics",
+  "panels": [
+    {
+      "title": "Pending Topups",
+      "type": "gauge",
+      "targets": [{"expr": "pending_topups"}]
+    },
+    {
+      "title": "Processed Topups",
+      "type": "counter",
+      "targets": [{"expr": "rate(processed_topups[1m])"}]
+    },
+    {
+      "title": "Failed Topups",
+      "type": "counter",
+      "targets": [{"expr": "rate(failed_topups[1m])"}]
+    }
+  ]
+}

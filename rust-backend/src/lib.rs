@@ -1,13 +1,15 @@
 use actix_web::{web, App, HttpServer};
 #[cfg(feature = "p2p")]
 use aura_p2p::P2PService;
-use sqlx::postgres::PgPoolOptions;
+use sqlx::sqlite::SqlitePoolOptions;
+#[cfg(feature = "p2p")]
 use std::sync::Arc;
 
 pub mod models;
 pub mod middleware;
 pub mod services;
 pub mod api;
+#[cfg(feature = "p2p")]
 pub mod p2p;
 
 pub async fn run() -> std::io::Result<()> {
@@ -16,28 +18,24 @@ pub async fn run() -> std::io::Result<()> {
     let p2p_service = Arc::new(P2PService::new().expect("Failed to initialize P2P service"));
     
     // Initialize database pool
+    #[cfg(feature = "sqlite")]
+    let db_pool = SqlitePoolOptions::new()
+        .connect_lazy("sqlite::memory:")
+        .unwrap();
+    #[cfg(feature = "postgres")]
     let db_pool = PgPoolOptions::new()
-        .max_connections(5)
         .connect_lazy("postgres://user:pass@localhost/db")
         .unwrap();
     
-    let state = api::AppState::new(
-        #[cfg(feature = "p2p")]
-        p2p_service,
-        db_pool
-    );
+    #[cfg(feature = "sqlite")]
+    let state = api::SqliteAppState::new(db_pool);
+    #[cfg(feature = "postgres")]
+    let state = api::PostgresAppState::new(db_pool);
     
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(state.clone()))
-            .service(
-                web::scope("/api")
-                    .service(
-                        web::scope("/p2p")
-                            .route("/peers", web::get().to(p2p::get_peers))
-                            .route("/peers/count", web::get().to(p2p::get_peers_count))
-                    )
-            )
+            .configure(api::configure)
     })
     .bind("127.0.0.1:8080")?
     .run()

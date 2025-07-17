@@ -1,0 +1,11 @@
+groups:
+- name: payment-alerts
+  rules:
+  - alert: HighPendingTopups
+    expr: pending_topups > 10
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High number of pending topups ({{ $value }})"
+      description: "Payment processing may be delayed"

@@ -1,0 +1,28 @@
+name: Build Installer
+
+on:
+  push:
+    paths:
+      - 'installer/**'
+      - '.github/workflows/build-installer.yml'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Inno Setup
+        uses: mklement0/setup-inno-setup@v1
+        with:
+          version: 6.2.2
+          
+      - name: Build installer
+        run: iscc installer/AuraSetup.iss
+        working-directory: ${{ github.workspace }}
+        
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: AuraSetup.exe
+          path: installer/Output/AuraSetup.exe

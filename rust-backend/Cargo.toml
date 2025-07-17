@@ -18,28 +18,50 @@ libp2p-tcp = { version = "0.44.0", features = ["tokio"] }
 aura-p2p = { path = "../aura-p2p", optional = true }
 ring = "0.17.7"
 subtle = { version = "2.5", features = ["i128"] }
-actix-web = "4.0"
+actix-web = { version = "4.0", features = ["rustls-0_21"] }
 actix-web-httpauth = "0.8"
 axum = { version = "0.7", features = ["macros"] }
-sqlx = { version = "0.7", features = ["postgres", "runtime-tokio-native-tls"] }
+sqlx = { version = "0.7", features = ["postgres", "sqlite", "runtime-tokio-native-tls"] }
 env_logger = "0.11"
+config = "0.13"
+rustls = "0.21"
+rustls-pemfile = "1.0"
 uuid = { version = "1.0", features = ["v4"] }
 chrono = "0.4"
 rust_decimal = "1.37"
+tower = "0.4"
+signaling = { path = "./crates/signaling" }
+webrtc = "0.1.0"
+webrtc-sys = "0.1.0"
+paddle-ocr-rs = "0.6.0"
+tempfile = "3.8"
+actix-multipart = "0.6"
+regex = "1.0"
+futures-util = "0.3"
+tailscale-client = { version = "0.1", optional = true }
 
 [dev-dependencies]
 axum-test-helper = "0.2"
+actix-rt = "2"
 tokio = { version = "1.0", features = ["full"] }
-sqlx = { version = "0.7", features = ["postgres", "runtime-tokio-native-tls"] }
+sqlx = { version = "0.7", features = ["postgres", "sqlite", "runtime-tokio-native-tls", "migrate"] }
+
+[build-dependencies]
+# Removed bindgen as we only use uni-ocr for OCR
 
 [features]
-default = []
-p2p = ["aura-p2p"]
+default = ["sqlite"]
+p2p = ["aura-p2p", "tailscale-client"]
 
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-wasm-bindgen = "0.2"
-console_error_panic_hook = "0.1"
-aura-wasm = { path = "../aura-wasm" }
+[dependencies.p2p]
+aura-p2p = []
+tailscale-client = []
+
+[dependencies.sqlite]
+sqlx = { version = "0.7", features = ["sqlite"] }
+
+[dependencies.postgres]
+sqlx = { version = "0.7", features = ["postgres"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { version = "1.0", features = ["full"] }

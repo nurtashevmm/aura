@@ -1,9 +1,7 @@
-use aura_core::{api::p2p::create_p2p_routes, models::AppState};
-use aura_p2p::P2pService;
-use axum::{body::Body, Router};
-use axum_test::TestServer;
-use serde_json::json;
-use std::sync::Arc;
+use aura_core::api::AppState;
+use axum::Router;
+use axum::http::StatusCode;
+use signaling::{SignalMessage, create_signaling_routes};
 
 #[tokio::test]
 async fn test_peers_endpoint() {
@@ -103,7 +101,7 @@ async fn test_signaling_flow() {
 
     let app = Router::new()
         .nest("/p2p", create_p2p_routes())
-        .nest("/signaling", signaling::create_signaling_routes())
+        .nest("/signaling", create_signaling_routes())
         .with_state(state);
 
     let server = TestServer::new(app).unwrap();
@@ -133,4 +131,17 @@ async fn test_signaling_flow() {
         .await;
     
     assert_eq!(response.status_code(), 200);
+}
+
+#[tokio::test]
+async fn test_signaling_message() {
+    let message = SignalMessage {
+        from: "peer1".to_string(),
+        to: "peer2".to_string(),
+        payload: "test".to_string()
+    };
+    
+    assert_eq!(message.from, "peer1");
+    assert_eq!(message.to, "peer2");
+    assert_eq!(message.payload, "test");
 }

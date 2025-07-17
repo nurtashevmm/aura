@@ -1,98 +1,102 @@
-use actix_web::{web, HttpResponse, Responder, error};
-use serde::{Serialize, Deserialize};
-#[cfg(feature = "p2p")]
-use aura_p2p::P2PService;
-#[cfg(feature = "p2p")]
-use libp2p::PeerId;
-use sqlx::PgPool;
+use actix_web::web;
+use aura_p2p::P2pService;
 use std::sync::Arc;
 
-#[derive(Clone)]
-pub struct AppState {
-    #[cfg(feature = "p2p")]
-    pub p2p: Option<Arc<P2PService>>,
-    pub db: PgPool,
+pub mod auth;
+pub mod billing;
+pub mod payment;
+pub mod ocr;
+
+#[cfg(feature = "p2p")]
+use aura_p2p::P2PService;
+
+#[cfg(feature = "postgres")]
+pub struct PostgresAppState {
+    pub db_pool: sqlx::PgPool,
 }
 
-impl AppState {
-    pub fn new(
-        #[cfg(feature = "p2p")] p2p: Option<Arc<P2PService>>,
-        db: PgPool
-    ) -> Self {
+#[cfg(feature = "postgres")]
+impl Clone for PostgresAppState {
+    fn clone(&self) -> Self {
         Self {
-            #[cfg(feature = "p2p")]
-            p2p,
-            db
+            db_pool: self.db_pool.clone(),
         }
     }
 }
 
-#[derive(Serialize)]
-pub struct PeerInfo {
-    pub id: String,
-    pub address: String,
+#[cfg(feature = "postgres")]
+impl PostgresAppState {
+    pub fn new(db_pool: sqlx::PgPool) -> Self {
+        Self {
+            db_pool,
+        }
+    }
 }
 
-#[derive(Deserialize)]
-pub struct SendMessage {
-    pub topic: String,
-    pub message: Vec<u8>,
+#[cfg(feature = "postgres")]
+pub async fn health(_data: web::Data<PostgresAppState>) -> impl actix_web::Responder {
+    actix_web::HttpResponse::Ok().json("OK")
 }
 
-#[get("/health")]
-async fn health() -> impl Responder {
-    HttpResponse::Ok().json(json!({ "status": "ok" }))
+pub mod core;
+pub mod handlers;
+
+#[cfg(feature = "sqlite")]
+pub mod sqlite;
+
+#[cfg(feature = "sqlite")]
+#[derive(Clone)]
+pub struct SqliteAppState {
+    pub db_pool: sqlx::SqlitePool,
+    #[cfg(feature = "p2p")]
+    pub p2p: Option<Arc<P2pService>>
 }
 
-pub fn create_api(cfg: &mut web::ServiceConfig) {
+#[cfg(feature = "sqlite")]
+impl SqliteAppState {
+    pub fn new(db_pool: sqlx::SqlitePool) -> Self {
+        Self {
+            db_pool,
+            #[cfg(feature = "p2p")]
+            p2p: None,
+        }
+    }
+}
+
+#[cfg(feature = "postgres")]
+pub mod postgres;
+
+#[cfg(feature = "postgres")]
+pub use core::postgres::*;
+
+#[cfg(feature = "sqlite")]
+pub fn configure(cfg: &mut web::ServiceConfig) {
+    use actix_web::web;
+    use crate::api::handlers::sqlite;
+    
     cfg.service(
         web::scope("/api")
-            .route("/p2p/peers", web::get().to(list_peers))
-            .route("/p2p/peers/count", web::get().to(list_peers_count))
-            .route("/p2p/send", web::post().to(send_message))
+            .route("/health", web::get().to(sqlite::health))
+            .route("/health/db", web::get().to(sqlite::health_db))
+            // .route("/health/p2p", web::get().to(sqlite::health_p2p))
+            .route("/health/p2p", web::get().to(|| async { "P2P health check temporarily disabled" }))
+            .route("/health/full", web::get().to(sqlite::health_full))
+            .route("/balance/topup", web::post().to(sqlite::balance_top_up))
+            .route("/session/start", web::post().to(sqlite::session_start))
+            .route("/session/stop", web::post().to(sqlite::session_stop))
+            .route("/billing/tick", web::post().to(sqlite::billing_tick))
+            .route("/merchant/heartbeat", web::post().to(sqlite::merchant_heartbeat))
+            .route("/stats/summary", web::get().to(sqlite::stats_summary))
+            .service(web::scope("/ocr").configure(crate::api::ocr::config)),
     );
 }
 
-pub async fn list_peers(data: web::Data<AppState>) -> impl Responder {
-    #[cfg(feature = "p2p")]
-    let peers = data.p2p.as_ref().unwrap().get_connected_peers();
-    #[cfg(not(feature = "p2p"))]
-    let peers = Vec::new();
-    HttpResponse::Ok().json(
-        peers.iter().map(|p| PeerInfo {
-            id: p.to_string(),
-            address: "".to_string(),
-        }).collect::<Vec<_>>()
-    )
-}
-
-pub async fn list_peers_count(data: web::Data<AppState>) -> impl Responder {
-    #[cfg(feature = "p2p")]
-    let count = data.p2p.as_ref().unwrap().get_connected_peers().len();
-    #[cfg(not(feature = "p2p"))]
-    let count = 0;
-    HttpResponse::Ok().json(count)
-}
-
-pub async fn send_message(
-    data: web::Data<AppState>,
-    payload: web::Json<SendMessage>,
-) -> impl Responder {
-    #[cfg(feature = "p2p")]
-    match data.p2p.as_ref().unwrap().send(payload.topic.clone(), payload.message.clone()) {
-        Ok(_) => HttpResponse::Ok().finish(),
-        Err(e) => HttpResponse::BadRequest().body(e.to_string()),
-    }
-    #[cfg(not(feature = "p2p"))]
-    HttpResponse::NotFound().finish()
-}
-
-pub fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(health);
+pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api")
-            .route("/p2p/peers", web::get().to(list_peers))
-            .route("/p2p/peers/count", web::get().to(list_peers_count))
-            .route("/p2p/send", web::post().to(send_message))
+            .configure(auth::config)
+            .configure(billing::config)
+            .configure(payment::config)
+            .configure(ocr::config)
     );
 }
